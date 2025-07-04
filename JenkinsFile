@@ -1,13 +1,12 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = "491387211183.dkr.ecr.ap-south-1.amazonaws.com/pet-clinic"
+        IMAGE_NAME = "<your-account>.dkr.ecr.<region>.amazonaws.com/springboot-demo"
     }
     stages {
         stage('Clone Code') {
             steps {
-                git 'https://github.com/ShrutikaDesai97/spring-petclinic.git'
-                
+                git 'https://github.com/<your-username>/springboot-demo.git'
             }
         }
         stage('Build JAR') {
@@ -23,19 +22,19 @@ pipeline {
         stage('Login to ECR') {
             steps {
                 sh '''
-                aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 491387211183.dkr.ecr.ap-south-1.amazonaws.com
+                aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <your-account>.dkr.ecr.<region>.amazonaws.com
                 '''
             }
         }
-stage('Push to ECR') {
-    steps {
-        sh 'docker push $IMAGE_NAME'
-    }
-}
+        stage('Push to ECR') {
+            steps {
+                sh 'docker push $IMAGE_NAME'
+            }
+        }
         stage('Deploy to EKS') {
             steps {
                 sh '''
-                sed -i "s|491387211183.dkr.ecr.ap-south-1.amazonaws.com/my-docker-repo|$IMAGE_NAME|" k8s/deployment.yaml
+                sed -i "s|<your-ecr-repo-url>|$IMAGE_NAME|" k8s/deployment.yaml
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
                 '''
@@ -43,4 +42,3 @@ stage('Push to ECR') {
         }
     }
 }
-                
