@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+    environment {
+        IMAGE_NAME = "491387211183.dkr.ecr.ap-south-1.amazonaws.com/pet-clinic"
+    }
+    stages {
+        stage('Clone Code') {
+            steps {
+                git 'https://github.com/ShrutikaDesai97/spring-petclinic.git'
+                
+            }
+        }
+        stage('Build JAR') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $IMAGE_NAME .'
+            }
+        }
+        stage('Login to ECR') {
+            steps {
+                sh '''
+                aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 491387211183.dkr.ecr.ap-south-1.amazonaws.com
+                '''
+            }
+        }
+         stage('Push to ECR') {
+            steps {
+                sh 'docker push $IMAGE_NAME'
+}
+        }
+        stage('Deploy to EKS') {
+            steps {
+                sh '''
+                sed -i "s|491387211183.dkr.ecr.ap-south-1.amazonaws.com/my-docker-repo|$IMAGE_NAME|" k8s/deployment.yaml
+                kubectl apply -f k8s/deployment.yaml
+                kubectl apply -f k8s/service.yaml
+                '''
+            }
+        }
+    }
+}
+                
